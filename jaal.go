@@ -15,14 +15,6 @@ type Listener interface {
 	Listen(eventHandler func(*Event), errHandler func(error))
 }
 
-type FatalError struct {
-	Err error
-}
-
-func (f FatalError) Error() string {
-	return f.Err.Error()
-}
-
 func Listen(listeners []Listener, log *logrus.Logger) {
 	for _, listener := range listeners {
 		go listener.Listen(eventHandler(log), errHandler(log))
@@ -44,4 +36,12 @@ func errHandler(log *logrus.Logger) func(error) {
 			log.Info(e)
 		}
 	}
+}
+
+type FatalError struct {
+	Err error
+}
+
+func (f FatalError) Error() string {
+	return f.Err.Error()
 }

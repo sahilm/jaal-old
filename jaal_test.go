@@ -62,3 +62,18 @@ func (t *testListener) Listen(eventHandler func(*jaal.Event), errHandler func(er
 func newTestListener() *testListener {
 	return &testListener{make(chan bool)}
 }
+
+func TestFatalError(t *testing.T) {
+	t.Run("it wraps its underlying error", func(t *testing.T) {
+		err := errors.New("I'm wrapped")
+		fe := &jaal.FatalError{
+			Err: err,
+		}
+
+		got := fe.Error()
+		want := err.Error()
+		if got != want {
+			t.Errorf("got: %v, want: %v", got, want)
+		}
+	})
+}
