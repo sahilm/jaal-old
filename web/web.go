@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sahilm/jaal"
+	"github.com/sahilm/jaal/jaal"
 )
 
 type Server struct {

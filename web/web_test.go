@@ -9,7 +9,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/sahilm/jaal"
+	"github.com/sahilm/jaal/jaal"
 	"github.com/sahilm/jaal/web"
 )
 
