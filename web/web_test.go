@@ -1,13 +1,10 @@
 package web_test
 
 import (
-	"testing"
-
-	"time"
-
-	"net/http"
-
 	"encoding/json"
+	"net/http"
+	"testing"
+	"time"
 
 	"github.com/sahilm/jaal/jaal"
 	"github.com/sahilm/jaal/web"
