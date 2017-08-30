@@ -1,13 +1,5 @@
 package jaal
 
-import (
-	"encoding/json"
-
-	"fmt"
-
-	"github.com/sirupsen/logrus"
-)
-
 type Event struct {
 	UnixTime       int64
 	Timestamp      string
@@ -23,32 +15,21 @@ type Listener interface {
 	Listen(eventHandler func(*Event), errHandler func(error))
 }
 
-func Listen(listeners []Listener, log *logrus.Logger) {
+func Listen(listeners []Listener, eventLogger EventLogger, errLogger *ErrLogger) {
 	for _, listener := range listeners {
-		go listener.Listen(eventHandler(log), errHandler(log))
+		go listener.Listen(eventHandler(eventLogger), errHandler(errLogger))
 	}
 }
 
-func eventHandler(log *logrus.Logger) func(event *Event) {
+func eventHandler(eventLogger EventLogger) func(event *Event) {
 	return func(e *Event) {
-		b, err := json.MarshalIndent(e, "", "  ")
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			fmt.Println(string(b))
-			//log.Info(string(b))
-		}
+		eventLogger.Log(e)
 	}
 }
 
-func errHandler(log *logrus.Logger) func(error) {
-	return func(err error) {
-		switch e := err.(type) {
-		case FatalError:
-			log.Fatal(e)
-		default:
-			log.Info(e)
-		}
+func errHandler(errLogger *ErrLogger) func(error) {
+	return func(e error) {
+		errLogger.Log(e)
 	}
 }
 

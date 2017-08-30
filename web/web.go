@@ -45,15 +45,11 @@ func event(r *http.Request, errHandler func(error)) *jaal.Event {
 	if err != nil {
 		errHandler(err)
 	}
-	now := time.Now()
 	event := &jaal.Event{
-		UnixTime:       now.Unix(),
-		Timestamp:      now.UTC().Format(time.RFC3339),
-		CorrelationID:  id[0:7],
-		Source:         remoteIP,
-		SourceHostName: jaal.LookupAddr(r.RemoteAddr),
-		Type:           "http",
-		Summary:        fmt.Sprintf("received %v at %v from %v", r.Method, r.URL, remoteIP),
+		CorrelationID: id[0:7],
+		Source:        remoteIP,
+		Type:          "http",
+		Summary:       fmt.Sprintf("received %v at %v from %v", r.Method, r.URL, remoteIP),
 		Data: &requestData{
 			URI:    r.RequestURI,
 			Method: r.Method,

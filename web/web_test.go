@@ -50,9 +50,6 @@ func validateEvent(event *jaal.Event, t *testing.T) {
 	want := `{"URI":"/","Method":"GET","Header":{"Accept-Encoding":["gzip"],"User-Agent":["Go-http-client/1.1"]}}`
 	test.AssertEqualString(t, got, want)
 	test.AssertEqualString(t, event.Summary, "received GET at / from 127.0.0.1")
-	test.AssertEqualString(t, event.SourceHostName, "localhost")
 	test.AssertEqualString(t, event.Source, "127.0.0.1")
 	test.AssertEqualString(t, event.Type, "http")
-	test.AssertNotNil(t, event.UnixTime)
-	test.AssertNotNil(t, event.Timestamp)
 }
