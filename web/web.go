@@ -24,16 +24,27 @@ type requestData struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	event := event(r, s.errHandler)
+	s.eventHandler(event)
+
+	setHeaders(w.Header())
+}
+
+func setHeaders(header http.Header) {
+	header.Add("Server", "nginx")
+	header.Add("Content-Type", "text/html; charset=utf-8")
+	header.Add("X-Powered-by", "PHP/5.4.45")
+}
+
+func event(r *http.Request, errHandler func(error)) *jaal.Event {
 	id, err := jaal.ToSHA256(r.RemoteAddr)
 	if err != nil {
-		s.errHandler(err)
+		errHandler(err)
 	}
-
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		s.errHandler(err)
+		errHandler(err)
 	}
-
 	now := time.Now()
 	event := &jaal.Event{
 		UnixTime:       now.Unix(),
@@ -42,10 +53,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Source:         remoteIP,
 		SourceHostName: jaal.LookupAddr(r.RemoteAddr),
 		Type:           "http",
-		Summary:        eventSummary(r, remoteIP),
-		Data:           processRequest(r),
+		Summary:        fmt.Sprintf("received %v at %v from %v", r.Method, r.URL, remoteIP),
+		Data: &requestData{
+			URI:    r.RequestURI,
+			Method: r.Method,
+			Header: r.Header,
+		},
 	}
-	s.eventHandler(event)
+	return event
 }
 
 func (s *Server) Listen(eventHandler func(*jaal.Event), errHandler func(error)) {
@@ -62,17 +77,5 @@ func (s *Server) Listen(eventHandler func(*jaal.Event), errHandler func(error)) 
 
 	if err := server.ListenAndServe(); err != nil {
 		errHandler(err)
-	}
-}
-
-func eventSummary(r *http.Request, remoteIP string) string {
-	return fmt.Sprintf("received %v at %v from %v", r.Method, r.URL, remoteIP)
-}
-
-func processRequest(r *http.Request) *requestData {
-	return &requestData{
-		URI:    r.RequestURI,
-		Method: r.Method,
-		Header: r.Header,
 	}
 }
