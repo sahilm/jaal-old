@@ -8,9 +8,9 @@ import (
 )
 
 func main() {
-	eventLogger := jaal.NewEventLogger(os.Stdout, " ")
 	errLogger := jaal.NewErrLogger(os.Stderr, " ")
-	webListener := &web.Server{Address: ":8080"}
+	eventLogger := jaal.NewEventLogger(os.Stdout, errLogger, " ")
+	webListener := &web.Server{Address: ":9000"}
 
 	jaal.Listen([]jaal.Listener{webListener}, eventLogger, errLogger)
 

@@ -13,10 +13,11 @@ import (
 func TestEventLogger(t *testing.T) {
 	t.Run("it logs events", func(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
-		l := jaal.NewEventLogger(buf, "")
+		el := jaal.NewErrLogger(bytes.NewBuffer([]byte{}), "")
+		l := jaal.NewEventLogger(buf, el, "")
 		l.Log(&jaal.Event{
 			Type:   "test",
-			Source: "127.0.0.1:8080",
+			Source: "127.0.0.1",
 		})
 
 		got := &jaal.Event{}
@@ -24,7 +25,7 @@ func TestEventLogger(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		test.AssertEqualString(t, got.Source, "127.0.0.1:8080")
+		test.AssertEqualString(t, got.Source, "127.0.0.1")
 		test.AssertEqualString(t, got.SourceHostName, "localhost")
 		test.AssertEqualString(t, got.Type, "test")
 	})

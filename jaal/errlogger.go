@@ -13,16 +13,15 @@ type ErrLogger struct {
 
 func NewErrLogger(out io.Writer, indent string) *ErrLogger {
 	l := logrus.New()
-	l.Formatter = &LogFormatter{indent}
 	l.Out = out
 	return &ErrLogger{l, indent}
 }
 
 func (el *ErrLogger) Log(err error) {
-	switch e := err.(type) {
+	switch err := err.(type) {
 	case FatalError:
-		el.l.Fatal(e)
+		el.l.Fatal(err)
 	default:
-		el.l.Error(e)
+		el.l.Error(err)
 	}
 }

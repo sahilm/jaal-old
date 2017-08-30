@@ -3,9 +3,7 @@ package jaal
 import (
 	"io"
 
-	"fmt"
 	"net"
-	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -17,38 +15,34 @@ type EventLogger interface {
 
 type EventLog struct {
 	l      *logrus.Logger
+	el     *ErrLogger
 	indent string
 }
 
-func NewEventLogger(out io.Writer, indent string) *EventLog {
+func NewEventLogger(out io.Writer, errLogger *ErrLogger, indent string) *EventLog {
 	l := logrus.New()
 	l.Formatter = &LogFormatter{indent}
 	l.Out = out
-	return &EventLog{l, indent}
+	return &EventLog{l, errLogger, indent}
 }
 
-func (el *EventLog) Log(event *Event) {
-	enrichEvent(event)
+func (eventLog *EventLog) Log(event *Event) {
+	enrichEvent(event, eventLog.el)
 
-	el.l.WithField("data", event).Info("")
+	eventLog.l.WithField("data", event).Info("")
 }
 
-func enrichEvent(event *Event) {
+func enrichEvent(event *Event, el *ErrLogger) {
 	now := time.Now()
-	event.SourceHostName = lookupAddr(event.Source)
+	event.SourceHostName = lookupAddr(event.Source, el)
 	event.UnixTime = now.Unix()
 	event.Timestamp = now.UTC().Format(time.RFC3339)
 }
 
-func lookupAddr(address string) string {
-	ip, _, err := net.SplitHostPort(address)
+func lookupAddr(address string, el *ErrLogger) string {
+	hosts, err := net.LookupAddr(address)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to lookup %v. Error: %v", address, err)
-		return "" // Don't care on err, just return nothing
-	}
-	hosts, err := net.LookupAddr(ip)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to lookup %v. Error: %v", address, err)
+		el.Log(err)
 		return "" // Don't care on err, just return nothing
 	}
 	return hosts[0]
