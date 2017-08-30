@@ -51,7 +51,7 @@ func (t *testListener) Listen(eventHandler func(*jaal.Event), errHandler func(er
 		Data:          data,
 		Source:        "test",
 		CorrelationID: "1234",
-		Timestamp:     1503956846,
+		UnixTime:      1503956846,
 	}
 	eventHandler(event)
 	errHandler(errors.New("an error"))

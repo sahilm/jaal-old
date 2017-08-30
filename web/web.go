@@ -34,9 +34,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.errHandler(err)
 	}
 
+	now := time.Now()
 	event := &jaal.Event{
-		Timestamp:      time.Now().Unix(),
-		CorrelationID:  id,
+		UnixTime:       now.Unix(),
+		Timestamp:      now.UTC().Format(time.RFC3339),
+		CorrelationID:  id[0:7],
 		Source:         remoteIP,
 		SourceHostName: jaal.LookupAddr(r.RemoteAddr),
 		Type:           "http",

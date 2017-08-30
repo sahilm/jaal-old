@@ -9,7 +9,8 @@ import (
 )
 
 type Event struct {
-	Timestamp      int64
+	UnixTime       int64
+	Timestamp      string
 	CorrelationID  string
 	Source         string
 	SourceHostName string

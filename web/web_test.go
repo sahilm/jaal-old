@@ -53,4 +53,6 @@ func validateEvent(event *jaal.Event, t *testing.T) {
 	test.AssertEqualString(t, event.SourceHostName, "localhost")
 	test.AssertEqualString(t, event.Source, "127.0.0.1")
 	test.AssertEqualString(t, event.Type, "http")
+	test.AssertNotNil(t, event.UnixTime)
+	test.AssertNotNil(t, event.Timestamp)
 }
