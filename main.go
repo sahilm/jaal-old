@@ -35,6 +35,4 @@ func main() {
 	webListener := &web.Server{Address: fmt.Sprintf(":%v", opts.HttpPort)}
 
 	jaal.Listen([]jaal.Listener{webListener}, eventLogger, systemLogger)
-
-	select {} //block forever
 }

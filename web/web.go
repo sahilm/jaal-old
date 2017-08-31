@@ -24,8 +24,10 @@ type requestData struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	event := event(r, s.systemLogHandler)
-	go s.eventHandler(event)
+	go func() {
+		event := event(r, s.systemLogHandler)
+		s.eventHandler(event)
+	}()
 
 	setHeaders(w.Header())
 }
@@ -60,6 +62,9 @@ func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 			Header: r.Header,
 		},
 	}
+
+	jaal.EnrichEvent(event)
+
 	return event
 }
 

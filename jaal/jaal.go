@@ -19,6 +19,7 @@ func Listen(listeners []Listener, eventLogger EventLogger, systemLogger *SystemL
 	for _, listener := range listeners {
 		go listener.Listen(eventHandler(eventLogger), sysLogHandler(systemLogger))
 	}
+	select {} //block forever
 }
 
 func eventHandler(eventLogger EventLogger) func(event *Event) {

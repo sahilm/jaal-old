@@ -30,10 +30,6 @@ func TestEventLogger(t *testing.T) {
 			t.Errorf("got :%v, want: %v", got, "127.0.0.1")
 		}
 
-		if got.SourceHostName != "localhost" {
-			t.Errorf("got :%v, want: %v", got, "localhost")
-		}
-
 		if got.Type != "test" {
 			t.Errorf("got :%v, want: %v", got, "test")
 		}

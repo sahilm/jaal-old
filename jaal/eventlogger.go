@@ -3,9 +3,6 @@ package jaal
 import (
 	"io"
 
-	"net"
-	"time"
-
 	"encoding/json"
 	"fmt"
 
@@ -29,24 +26,7 @@ func NewEventLogger(out io.Writer, systemLogger *SystemLogger, indent string) *E
 }
 
 func (el *EventLog) Log(event *Event) {
-	enrichEvent(event, el.sl)
 	el.l.WithField("data", event).Info("")
-}
-
-func enrichEvent(event *Event, sl *SystemLogger) {
-	now := time.Now()
-	event.SourceHostName = lookupAddr(event.Source, sl)
-	event.UnixTime = now.Unix()
-	event.Timestamp = now.UTC().Format(time.RFC3339)
-}
-
-func lookupAddr(address string, sl *SystemLogger) string {
-	hosts, err := net.LookupAddr(address)
-	if err != nil {
-		sl.Error(err)
-		return "" // Don't care on err, just return nothing
-	}
-	return hosts[0]
 }
 
 type eventLogFormatter struct {
