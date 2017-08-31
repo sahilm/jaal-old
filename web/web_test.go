@@ -49,7 +49,7 @@ func validateEvent(event *jaal.Event, t *testing.T) {
 	}
 
 	got = event.Summary
-	want = "received GET at / from 127.0.0.1"
+	want = "received GET at / from localhost (127.0.0.1)"
 
 	if got != want {
 		t.Errorf("got %v, want %v", got, want)

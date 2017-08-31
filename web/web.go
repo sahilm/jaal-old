@@ -55,7 +55,6 @@ func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 		CorrelationID: id[0:7],
 		Source:        remoteIP,
 		Type:          "http",
-		Summary:       fmt.Sprintf("received %v at %v from %v", r.Method, r.URL, remoteIP),
 		Data: &requestData{
 			URI:    r.RequestURI,
 			Method: r.Method,
@@ -64,6 +63,8 @@ func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 	}
 
 	jaal.EnrichEvent(event)
+	event.Summary = fmt.Sprintf("received %v at %v from %v (%v)", r.Method, r.URL,
+		event.SourceHostName, event.Source)
 
 	return event
 }
