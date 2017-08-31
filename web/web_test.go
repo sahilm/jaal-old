@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -10,17 +11,15 @@ import (
 )
 
 func TestServer_Listen(t *testing.T) {
-	t.Run("it returns event with request metadata", func(t *testing.T) {
+	t.Run("it logs events with request metadata", func(t *testing.T) {
 		s := &web.Server{
 			Address: ":8080",
 		}
-		ch := make(chan *jaal.Event, 1)
-		errchan := make(chan error, 1)
+		eventChan := make(chan *jaal.Event, 1)
 
 		go s.Listen(func(event *jaal.Event) {
-			ch <- event
-		}, func(e error) {
-			errchan <- e
+			eventChan <- event
+		}, func(i interface{}) {
 		})
 
 		_, err := http.Get("http://127.0.0.1:8080/")
@@ -32,22 +31,41 @@ func TestServer_Listen(t *testing.T) {
 		select {
 		case <-timeout:
 			t.Errorf("timed out")
-		case e := <-errchan:
-			t.Errorf("got error: %v, want no error", e)
-		case event := <-ch:
+		case event := <-eventChan:
 			validateEvent(event, t)
 		}
 	})
 }
 func validateEvent(event *jaal.Event, t *testing.T) {
-	//b, err := json.Marshal(event.Data)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	////got := string(b)
-	////want := `{"URI":"/","Method":"GET","Header":{"Accept-Encoding":["gzip"],"User-Agent":["Go-http-client/1.1"]}}`
-	////test.AssertEqualString(t, got, want)
-	////test.AssertEqualString(t, event.Summary, "received GET at / from 127.0.0.1")
-	////test.AssertEqualString(t, event.Source, "127.0.0.1")
-	////test.AssertEqualString(t, event.Type, "http")
+	b, err := json.Marshal(event.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	want := `{"URI":"/","Method":"GET","Header":{"Accept-Encoding":["gzip"],"User-Agent":["Go-http-client/1.1"]}}`
+
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+
+	got = event.Summary
+	want = "received GET at / from 127.0.0.1"
+
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+
+	got = event.Source
+	want = "127.0.0.1"
+
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+
+	got = event.Type
+	want = "http"
+
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
 }

@@ -1,4 +1,4 @@
-package jaal_test
+package jaal
 
 import (
 	"errors"
@@ -7,16 +7,14 @@ import (
 	"bytes"
 
 	"time"
-
-	"github.com/sahilm/jaal/jaal"
 )
 
 func TestListen(t *testing.T) {
 	t.Run("it logs all events", func(t *testing.T) {
 		tl := &testEventLog{}
 		listener := newTestListener()
-		errLogger := jaal.NewSystemLogger(bytes.NewBuffer([]byte{}), "")
-		go jaal.Listen([]jaal.Listener{listener}, tl, errLogger)
+		errLogger := NewSystemLogger(bytes.NewBuffer([]byte{}), "")
+		go Listen([]Listener{listener}, tl, errLogger)
 		timeout := time.After(100 * time.Millisecond)
 		select {
 		case <-timeout:
@@ -32,10 +30,10 @@ func TestListen(t *testing.T) {
 }
 
 type testEventLog struct {
-	LoggedEvents []*jaal.Event
+	LoggedEvents []*Event
 }
 
-func (tl *testEventLog) Log(event *jaal.Event) {
+func (tl *testEventLog) Log(event *Event) {
 	tl.LoggedEvents = append(tl.LoggedEvents, event)
 }
 
@@ -48,10 +46,10 @@ type data struct {
 	bar uint
 }
 
-var event *jaal.Event
+var event *Event
 
-func (t *testListener) Listen(eventHandler func(*jaal.Event), errHandler func(error)) {
-	event = &jaal.Event{
+func (t *testListener) Listen(eventHandler func(*Event), errHandler func(interface{})) {
+	event = &Event{
 		Data: &data{
 			foo: "something",
 			bar: 9,
@@ -72,13 +70,15 @@ func newTestListener() *testListener {
 
 func TestFatalError(t *testing.T) {
 	t.Run("it wraps its underlying error", func(t *testing.T) {
-		//err := errors.New("I'm wrapped")
-		//fe := &jaal.FatalError{
-		//	Err: err,
-		//}
+		err := errors.New("I'm wrapped")
+		fe := &FatalError{
+			Err: err,
+		}
 
-		//got := fe.Error()
-		//want := err.Error()
-		//test.AssertEqualString(t, got, want)
+		got := fe.Error()
+		want := err.Error()
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
 	})
 }
