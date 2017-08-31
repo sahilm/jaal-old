@@ -38,11 +38,13 @@ func setHeaders(header http.Header) {
 
 func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
+
 	if err != nil {
 		sysLogHandler(err)
 	}
 
 	id, err := jaal.ToSHA256(remoteIP)
+
 	if err != nil {
 		sysLogHandler(err)
 	}
