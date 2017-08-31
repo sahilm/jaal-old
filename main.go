@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	errLogger := jaal.NewErrLogger(os.Stderr, " ")
-	eventLogger := jaal.NewEventLogger(os.Stdout, errLogger, " ")
+	systemLogger := jaal.NewSystemLogger(os.Stderr, " ")
+	eventLogger := jaal.NewEventLogger(os.Stdout, systemLogger, " ")
 	webListener := &web.Server{Address: ":9000"}
 
-	jaal.Listen([]jaal.Listener{webListener}, eventLogger, errLogger)
+	jaal.Listen([]jaal.Listener{webListener}, eventLogger, systemLogger)
 
 	select {} //block forever
 }

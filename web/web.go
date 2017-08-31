@@ -12,9 +12,9 @@ import (
 )
 
 type Server struct {
-	Address      string
-	eventHandler func(*jaal.Event)
-	errHandler   func(error)
+	Address          string
+	eventHandler     func(*jaal.Event)
+	systemLogHandler func(interface{})
 }
 
 type requestData struct {
@@ -24,8 +24,8 @@ type requestData struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	event := event(r, s.errHandler)
-	s.eventHandler(event)
+	event := event(r, s.systemLogHandler)
+	go s.eventHandler(event)
 
 	setHeaders(w.Header())
 }
@@ -36,14 +36,14 @@ func setHeaders(header http.Header) {
 	header.Add("X-Powered-by", "PHP/5.4.45")
 }
 
-func event(r *http.Request, errHandler func(error)) *jaal.Event {
+func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 	id, err := jaal.ToSHA256(r.RemoteAddr)
 	if err != nil {
-		errHandler(err)
+		sysLogHandler(err)
 	}
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		errHandler(err)
+		sysLogHandler(err)
 	}
 	event := &jaal.Event{
 		CorrelationID: id[0:7],
@@ -59,9 +59,11 @@ func event(r *http.Request, errHandler func(error)) *jaal.Event {
 	return event
 }
 
-func (s *Server) Listen(eventHandler func(*jaal.Event), errHandler func(error)) {
+func (s *Server) Listen(eventHandler func(*jaal.Event), systemLogHandler func(interface{})) {
+	go systemLogHandler(fmt.Sprintf("starting web listener at %v", s.Address))
+
 	s.eventHandler = eventHandler
-	s.errHandler = errHandler
+	s.systemLogHandler = systemLogHandler
 
 	server := &http.Server{
 		Addr:           s.Address,
@@ -72,6 +74,6 @@ func (s *Server) Listen(eventHandler func(*jaal.Event), errHandler func(error)) 
 	}
 
 	if err := server.ListenAndServe(); err != nil {
-		errHandler(err)
+		systemLogHandler(jaal.FatalError{Err: err})
 	}
 }

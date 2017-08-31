@@ -12,12 +12,12 @@ type Event struct {
 }
 
 type Listener interface {
-	Listen(eventHandler func(*Event), errHandler func(error))
+	Listen(eventHandler func(*Event), systemLogHandler func(interface{}))
 }
 
-func Listen(listeners []Listener, eventLogger EventLogger, errLogger *ErrLogger) {
+func Listen(listeners []Listener, eventLogger EventLogger, systemLogger *SystemLogger) {
 	for _, listener := range listeners {
-		go listener.Listen(eventHandler(eventLogger), errHandler(errLogger))
+		go listener.Listen(eventHandler(eventLogger), sysLogHandler(systemLogger))
 	}
 }
 
@@ -27,9 +27,14 @@ func eventHandler(eventLogger EventLogger) func(event *Event) {
 	}
 }
 
-func errHandler(errLogger *ErrLogger) func(error) {
-	return func(e error) {
-		errLogger.Log(e)
+func sysLogHandler(systemLogger *SystemLogger) func(interface{}) {
+	return func(i interface{}) {
+		switch i := i.(type) {
+		case error:
+			systemLogger.Error(i)
+		default:
+			systemLogger.Info(i)
+		}
 	}
 }
 

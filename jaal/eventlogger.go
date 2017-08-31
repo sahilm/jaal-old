@@ -6,6 +6,9 @@ import (
 	"net"
 	"time"
 
+	"encoding/json"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,36 +17,48 @@ type EventLogger interface {
 }
 
 type EventLog struct {
-	l      *logrus.Logger
-	el     *ErrLogger
-	indent string
+	l  *logrus.Logger
+	sl *SystemLogger
 }
 
-func NewEventLogger(out io.Writer, errLogger *ErrLogger, indent string) *EventLog {
+func NewEventLogger(out io.Writer, systemLogger *SystemLogger, indent string) *EventLog {
 	l := logrus.New()
-	l.Formatter = &LogFormatter{indent}
 	l.Out = out
-	return &EventLog{l, errLogger, indent}
+	l.Formatter = &eventLogFormatter{indent}
+	return &EventLog{l, systemLogger}
 }
 
-func (eventLog *EventLog) Log(event *Event) {
-	enrichEvent(event, eventLog.el)
-
-	eventLog.l.WithField("data", event).Info("")
+func (el *EventLog) Log(event *Event) {
+	enrichEvent(event, el.sl)
+	el.l.WithField("data", event).Info("")
 }
 
-func enrichEvent(event *Event, el *ErrLogger) {
+func enrichEvent(event *Event, sl *SystemLogger) {
 	now := time.Now()
-	event.SourceHostName = lookupAddr(event.Source, el)
+	event.SourceHostName = lookupAddr(event.Source, sl)
 	event.UnixTime = now.Unix()
 	event.Timestamp = now.UTC().Format(time.RFC3339)
 }
 
-func lookupAddr(address string, el *ErrLogger) string {
+func lookupAddr(address string, sl *SystemLogger) string {
 	hosts, err := net.LookupAddr(address)
 	if err != nil {
-		el.Log(err)
+		sl.Error(err)
 		return "" // Don't care on err, just return nothing
 	}
 	return hosts[0]
+}
+
+type eventLogFormatter struct {
+	indent string
+}
+
+func (f *eventLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	var serialized []byte
+	var err error
+	serialized, err = json.MarshalIndent(entry.Data["data"], "", f.indent)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
+	}
+	return serialized, nil
 }
