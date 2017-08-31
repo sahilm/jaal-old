@@ -37,14 +37,16 @@ func setHeaders(header http.Header) {
 }
 
 func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
-	id, err := jaal.ToSHA256(r.RemoteAddr)
-	if err != nil {
-		sysLogHandler(err)
-	}
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		sysLogHandler(err)
 	}
+
+	id, err := jaal.ToSHA256(remoteIP)
+	if err != nil {
+		sysLogHandler(err)
+	}
+
 	event := &jaal.Event{
 		CorrelationID: id[0:7],
 		Source:        remoteIP,
