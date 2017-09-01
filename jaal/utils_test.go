@@ -6,7 +6,7 @@ import (
 
 func TestToSHA256(t *testing.T) {
 	t.Run("it return SHA256 of input", func(t *testing.T) {
-		got, err := ToSHA256("hello")
+		got, err := ToSHA256([]byte("hello"))
 		if err != nil {
 			t.Fatal(err)
 		}
