@@ -15,28 +15,38 @@ type exec struct {
 	Command string
 }
 
+type tcpipForward struct {
+	BindAddress string
+	BindPort    uint32
+}
+
 func sshRequestsHandler(reqs <-chan *ssh.Request, metadata sshEventMetadata,
 	eventLogHandler func(event *jaal.Event), sysLogHandler func(interface{})) {
-
-	var data interface{}
 
 	for r := range reqs {
 		switch r.Type {
 		case "env":
-			data = env{}
+			data := env{}
 			err := ssh.Unmarshal(r.Payload, &data)
 			if err != nil {
 				sysLogHandler(err)
 			}
+			eventLogHandler(requestEvent(metadata, r.Type, data))
 		case "exec":
-			data = exec{}
+			data := exec{}
 			err := ssh.Unmarshal(r.Payload, &data)
 			if err != nil {
 				sysLogHandler(err)
 			}
+			eventLogHandler(requestEvent(metadata, r.Type, data))
+		case "tcpip-forward":
+			data := tcpipForward{}
+			err := ssh.Unmarshal(r.Payload, &data)
+			if err != nil {
+				sysLogHandler(err)
+			}
+			eventLogHandler(requestEvent(metadata, r.Type, data))
 		}
-
-		eventLogHandler(requestEvent(metadata, r.Type, data))
 
 		if r.WantReply {
 			err := r.Reply(true, nil)

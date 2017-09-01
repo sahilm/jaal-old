@@ -74,8 +74,6 @@ func (s *Server) accept(listener net.Listener, eventHandler func(*jaal.Event), s
 		return
 	}
 
-	defer sshServerConn.Close()
-
 	sha, err := jaal.ToSHA256(sshServerConn.SessionID())
 	if err != nil {
 		systemLogHandler(err)
@@ -99,9 +97,11 @@ func (s *Server) accept(listener net.Listener, eventHandler func(*jaal.Event), s
 
 	go sshRequestsHandler(reqs, metadata, eventHandler, systemLogHandler)
 
-	for newChannel := range chans {
-		sshChannelHandler(newChannel, metadata, eventHandler, systemLogHandler)
-	}
+	go func() {
+		for newChannel := range chans {
+			sshChannelHandler(newChannel, metadata, eventHandler, systemLogHandler)
+		}
+	}()
 }
 
 func config(sshHostKeyFile string, systemLogHandler func(interface{})) *ssh.ServerConfig {
