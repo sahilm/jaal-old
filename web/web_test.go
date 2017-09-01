@@ -11,10 +11,11 @@ import (
 )
 
 func TestServer_Listen(t *testing.T) {
+	s := web.NewServer(":8080")
+	defer s.Stop()
+
 	t.Run("it logs events with request metadata", func(t *testing.T) {
-		s := &web.Server{
-			Address: ":8080",
-		}
+
 		eventChan := make(chan *jaal.Event, 1)
 
 		go s.Listen(func(event *jaal.Event) {

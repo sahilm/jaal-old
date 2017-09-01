@@ -12,15 +12,24 @@ import (
 )
 
 type Server struct {
-	Address          string
+	address          string
 	eventHandler     func(*jaal.Event)
 	systemLogHandler func(interface{})
+	quit             chan bool
 }
 
 type requestData struct {
 	URI    string
 	Method string
 	Header http.Header
+}
+
+func NewServer(address string) *Server {
+	quit := make(chan bool)
+	return &Server{
+		address: address,
+		quit:    quit,
+	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +54,7 @@ func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 		sysLogHandler(err)
 	}
 
-	id, err := jaal.ToSHA256(remoteIP)
+	id, err := jaal.ToSHA256([]byte(remoteIP))
 
 	if err != nil {
 		sysLogHandler(err)
@@ -70,20 +79,28 @@ func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 }
 
 func (s *Server) Listen(eventHandler func(*jaal.Event), systemLogHandler func(interface{})) {
-	go systemLogHandler(fmt.Sprintf("starting web listener at %v", s.Address))
+	go systemLogHandler(fmt.Sprintf("starting web listener at %v", s.address))
 
 	s.eventHandler = eventHandler
 	s.systemLogHandler = systemLogHandler
 
 	server := &http.Server{
-		Addr:           s.Address,
+		Addr:           s.address,
 		Handler:        s,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		systemLogHandler(jaal.FatalError{Err: err})
-	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			systemLogHandler(jaal.FatalError{Err: err})
+		}
+	}()
+
+	<-s.quit
+}
+
+func (s *Server) Stop() {
+	s.quit <- true
 }

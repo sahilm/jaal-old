@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-func ToSHA256(s string) (string, error) {
+func ToSHA256(b []byte) (string, error) {
 	h := sha256.New()
-	_, err := h.Write([]byte(s))
+	_, err := h.Write(b)
 	if err != nil {
 		return "", err
 	}
