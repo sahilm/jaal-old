@@ -16,8 +16,10 @@ type Listener interface {
 }
 
 func Listen(listeners []Listener, eventLogger EventLogger, systemLogger *SystemLogger) {
+	e := eventHandler(eventLogger)
+	s := sysLogHandler(systemLogger)
 	for _, listener := range listeners {
-		go listener.Listen(eventHandler(eventLogger), sysLogHandler(systemLogger))
+		go listener.Listen(e, s)
 	}
 	select {} //block forever
 }
