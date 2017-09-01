@@ -22,7 +22,7 @@ func TestServer_Listen(t *testing.T) {
 		}, func(i interface{}) {
 		})
 
-		_, err := http.Get("http://127.0.0.1:8080/")
+		_, err := http.Get("http://localhost:8080/")
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 		}
