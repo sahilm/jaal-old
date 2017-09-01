@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net"
-	"time"
 )
 
 func ToSHA256(b []byte) (string, error) {
@@ -16,14 +15,7 @@ func ToSHA256(b []byte) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func EnrichEvent(event *Event) {
-	now := time.Now()
-	event.SourceHostName = lookupAddr(event.Source)
-	event.UnixTime = now.Unix()
-	event.Timestamp = now.UTC().Format(time.RFC3339)
-}
-
-func lookupAddr(address string) string {
+func LookupAddr(address string) string {
 	hosts, err := net.LookupAddr(address)
 	if err != nil {
 		return "" // Don't care on err, just return nothing

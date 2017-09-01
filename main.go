@@ -6,6 +6,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/sahilm/jaal/jaal"
+	"github.com/sahilm/jaal/secureshell"
 	"github.com/sahilm/jaal/web"
 )
 
@@ -13,7 +14,8 @@ var version = "latest"
 
 func main() {
 	var opts struct {
-		HttpPort uint   `long:"http-port" description:"port to listen on for http traffic" default:"80"`
+		SSHPort  uint   `long:"ssh-port" description:"port to listen on for ssh traffic" default:"22"`
+		HTTPPort uint   `long:"http-port" description:"port to listen on for http traffic" default:"80"`
 		Version  func() `long:"version" description:"print version and exit"`
 	}
 
@@ -32,7 +34,8 @@ func main() {
 
 	systemLogger := jaal.NewSystemLogger(os.Stderr)
 	eventLogger := jaal.NewEventLogger(os.Stdout, systemLogger, " ")
-	webListener := web.NewServer(fmt.Sprintf(":%v", opts.HttpPort))
+	webListener := web.NewServer(fmt.Sprintf(":%v", opts.HTTPPort))
+	sshListener := secureshell.NewServer(fmt.Sprintf(":%v", opts.SSHPort))
 
-	jaal.Listen([]jaal.Listener{webListener}, eventLogger, systemLogger)
+	jaal.Listen([]jaal.Listener{webListener, sshListener}, eventLogger, systemLogger)
 }

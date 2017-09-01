@@ -71,7 +71,11 @@ func event(r *http.Request, sysLogHandler func(interface{})) *jaal.Event {
 		},
 	}
 
-	jaal.EnrichEvent(event)
+	now := time.Now()
+	event.SourceHostName = jaal.LookupAddr(event.Source)
+	event.UnixTime = now.Unix()
+	event.Timestamp = now.UTC().Format(time.RFC3339)
+
 	event.Summary = fmt.Sprintf("received %v at %v from %v (%v)", r.Method, r.URL,
 		event.SourceHostName, event.Source)
 
