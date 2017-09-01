@@ -33,10 +33,8 @@ func NewServer(address string) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	go func() {
-		event := event(r, s.systemLogHandler)
-		s.eventHandler(event)
-	}()
+	event := event(r, s.systemLogHandler)
+	s.eventHandler(event)
 
 	setHeaders(w.Header())
 }

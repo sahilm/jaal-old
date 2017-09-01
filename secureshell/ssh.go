@@ -95,9 +95,10 @@ func (s *Server) accept(listener net.Listener, eventHandler func(*jaal.Event), s
 		Password:      sshServerConn.Permissions.Extensions[sha[0:7]], // See PasswordCallback
 		Username:      sshServerConn.User(),
 	}
+	eventHandler(loginEvent(metadata))
 
 	go sshRequestsHandler(reqs, eventHandler, systemLogHandler)
-	go eventHandler(loginEvent(metadata))
+
 	for newChannel := range chans {
 		sshChannelHandler(newChannel, metadata, eventHandler, systemLogHandler)
 	}
@@ -131,18 +132,6 @@ func config(sshHostKeyFile string, systemLogHandler func(interface{})) *ssh.Serv
 }
 
 func hostKey(sshHostKeyFile string) (ssh.Signer, error) {
-	generateKey := func() (ssh.Signer, error) {
-		key, err := rsa.GenerateKey(rand.Reader, 4096)
-		if err != nil {
-			return nil, err
-		}
-		signer, err := ssh.NewSignerFromKey(key)
-		if err != nil {
-			return nil, err
-		}
-		return signer, nil
-	}
-
 	if sshHostKeyFile != "" {
 		keyBytes, err := ioutil.ReadFile(sshHostKeyFile)
 		if err != nil {
@@ -155,8 +144,20 @@ func hostKey(sshHostKeyFile string) (ssh.Signer, error) {
 		}
 		return key, nil
 	} else {
-		return generateKey()
+		return generateHostKey()
 	}
+}
+
+func generateHostKey() (ssh.Signer, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return nil, err
+	}
+	signer, err := ssh.NewSignerFromKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return signer, nil
 }
 
 func loginEvent(metadata sshEventMetadata) *jaal.Event {

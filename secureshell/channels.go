@@ -59,10 +59,10 @@ func sshChannelHandler(newChannel ssh.NewChannel, metadata sshEventMetadata,
 		for {
 			line, err := term.ReadLine()
 			if err != nil {
+				syslogHandler(err)
 				if err != io.EOF {
-					syslogHandler(err)
+					break
 				}
-				break
 			}
 			eventLogHandler(termLineEvent(metadata, line))
 		}
