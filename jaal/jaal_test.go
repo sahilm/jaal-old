@@ -13,7 +13,7 @@ func TestListen(t *testing.T) {
 	t.Run("it logs all events", func(t *testing.T) {
 		tl := &testEventLog{}
 		listener := newTestListener()
-		errLogger := NewSystemLogger(bytes.NewBuffer([]byte{}), "")
+		errLogger := NewSystemLogger(bytes.NewBuffer([]byte{}))
 		go Listen([]Listener{listener}, tl, errLogger)
 		timeout := time.After(100 * time.Millisecond)
 		select {

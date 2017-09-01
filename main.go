@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	systemLogger := jaal.NewSystemLogger(os.Stderr, " ")
+	systemLogger := jaal.NewSystemLogger(os.Stderr)
 	eventLogger := jaal.NewEventLogger(os.Stdout, systemLogger, " ")
 	webListener := &web.Server{Address: fmt.Sprintf(":%v", opts.HttpPort)}
 

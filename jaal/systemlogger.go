@@ -10,19 +10,18 @@ type SystemLogger struct {
 	l *logrus.Logger
 }
 
-func NewSystemLogger(out io.Writer, indent string) *SystemLogger {
+func NewSystemLogger(out io.Writer) *SystemLogger {
 	l := logrus.New()
 	l.Out = out
-	l.Formatter = &logrus.JSONFormatter{}
 	return &SystemLogger{l}
 }
 
 func (sl *SystemLogger) Error(err error) {
 	switch err := err.(type) {
 	case FatalError:
-		sl.l.WithField("error", err).Fatal("")
+		sl.l.Fatal(err)
 	default:
-		sl.l.WithField("error", err).Error("")
+		sl.l.Error(err)
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 func TestEventLogger(t *testing.T) {
 	t.Run("it logs events", func(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
-		el := NewSystemLogger(bytes.NewBuffer([]byte{}), "")
+		el := NewSystemLogger(bytes.NewBuffer([]byte{}))
 		l := NewEventLogger(buf, el, "")
 		testEvent := &Event{
 			Type:   "test",
