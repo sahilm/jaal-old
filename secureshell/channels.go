@@ -52,17 +52,17 @@ func sshChannelHandler(newChannel ssh.NewChannel, metadata sshEventMetadata,
 	}
 
 	defer channel.Close()
-	go sshRequestsHandler(reqs, eventLogHandler, syslogHandler)
+	go sshRequestsHandler(reqs, metadata, eventLogHandler, syslogHandler)
 
 	if newChannel.ChannelType() == "session" {
 		term := terminal.NewTerminal(channel, "$ ")
 		for {
 			line, err := term.ReadLine()
 			if err != nil {
-				syslogHandler(err)
 				if err != io.EOF {
-					break
+					syslogHandler(err)
 				}
+				break
 			}
 			eventLogHandler(termLineEvent(metadata, line))
 		}
