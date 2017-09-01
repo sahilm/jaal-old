@@ -14,9 +14,10 @@ var version = "latest"
 
 func main() {
 	var opts struct {
-		SSHPort  uint   `long:"ssh-port" description:"port to listen on for ssh traffic" default:"22"`
-		HTTPPort uint   `long:"http-port" description:"port to listen on for http traffic" default:"80"`
-		Version  func() `long:"version" description:"print version and exit"`
+		SSHHostKeyFile string `long:"ssh-host-key-file" description:"path to the ssh host key file"`
+		SSHPort        uint   `long:"ssh-port" description:"port to listen on for ssh traffic" default:"22"`
+		HTTPPort       uint   `long:"http-port" description:"port to listen on for http traffic" default:"80"`
+		Version        func() `long:"version" description:"print version and exit"`
 	}
 
 	opts.Version = func() {
@@ -35,7 +36,7 @@ func main() {
 	systemLogger := jaal.NewSystemLogger(os.Stderr)
 	eventLogger := jaal.NewEventLogger(os.Stdout, systemLogger, " ")
 	webListener := web.NewServer(fmt.Sprintf(":%v", opts.HTTPPort))
-	sshListener := secureshell.NewServer(fmt.Sprintf(":%v", opts.SSHPort))
+	sshListener := secureshell.NewServer(fmt.Sprintf(":%v", opts.SSHPort), opts.SSHHostKeyFile)
 
 	jaal.Listen([]jaal.Listener{webListener, sshListener}, eventLogger, systemLogger)
 }

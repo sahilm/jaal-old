@@ -40,5 +40,5 @@ func (f *eventLogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
 	}
-	return serialized, nil
+	return append(serialized, '\n'), nil
 }

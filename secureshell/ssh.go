@@ -9,22 +9,29 @@ import (
 	"net"
 	"time"
 
+	"io/ioutil"
+
 	"github.com/sahilm/jaal/jaal"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Server struct {
-	Address   string
-	ioTimeout time.Duration
-	quit      chan bool
+	Address        string
+	sshHostKeyFile string
+	ioTimeout      time.Duration
+	quit           chan bool
 }
 
-func NewServer(address string) *Server {
+func NewServer(address string, sshHostKeyFile string) *Server {
 	quit := make(chan bool)
 	timeout := 5 * time.Minute
 
-	return &Server{address, timeout, quit}
+	return &Server{
+		Address:        address,
+		ioTimeout:      timeout,
+		sshHostKeyFile: sshHostKeyFile,
+		quit:           quit,
+	}
 }
 
 func (s *Server) Stop() {
@@ -34,95 +41,69 @@ func (s *Server) Stop() {
 func (s *Server) Listen(eventHandler func(*jaal.Event), systemLogHandler func(interface{})) {
 	go systemLogHandler(fmt.Sprintf("starting ssh listener at %v", s.Address))
 
-	config := config(systemLogHandler)
-
 	listener, err := net.Listen("tcp", s.Address)
-
 	if err != nil {
 		systemLogHandler(jaal.FatalError{Err: err})
 	}
 
 	defer listener.Close()
 
-	go func() {
-		for {
-			tcpConn, err := listener.Accept()
-			if err != nil {
-				systemLogHandler(err)
-				continue
-			}
-
-			tcpConn.SetDeadline(time.Now().Add(s.ioTimeout))
-
-			sshServerConn, chans, reqs, err := ssh.NewServerConn(tcpConn, config)
-			if err != nil {
-				systemLogHandler(err)
-				continue
-			}
-
-			sha, err := jaal.ToSHA256(sshServerConn.SessionID())
-			if err != nil {
-				systemLogHandler(err)
-				sshServerConn.Close()
-				continue
-			}
-
-			metadata := sshEventMetadata{
-				RemoteAddr:    sshServerConn.RemoteAddr(),
-				ClientVersion: string(sshServerConn.ClientVersion()),
-				CorrelationID: sha[0:7],
-				Password:      sshServerConn.Permissions.Extensions[sha[0:7]], // See PasswordCallback
-				Username:      sshServerConn.User(),
-			}
-
-			go ssh.DiscardRequests(reqs)
-
-			go eventHandler(loginEvent(metadata))
-
-			// Service the incoming Channel channel.
-			for newChannel := range chans {
-				// Channels have a type, depending on the application level
-				// protocol intended. In the case of a shell, the type is
-				// "session" and ServerShell may be used to present a simple
-				// terminal interface.
-				if newChannel.ChannelType() != "session" {
-					newChannel.Reject(ssh.UnknownChannelType, "unknown channel type")
-					continue
-				}
-				channel, requests, err := newChannel.Accept()
-				if err != nil {
-					systemLogHandler(err)
-				}
-
-				// Sessions have out-of-band requests such as "shell",
-				// "pty-req" and "env".  Here we handle only the
-				// "shell" request.
-				go func(in <-chan *ssh.Request) {
-					for req := range in {
-						req.Reply(req.Type == "shell", nil)
-					}
-				}(requests)
-
-				term := terminal.NewTerminal(channel, "> ")
-
-				go func() {
-					defer channel.Close()
-					for {
-						line, err := term.ReadLine()
-						if err != nil {
-							break
-						}
-						fmt.Println(line)
-					}
-				}()
-			}
+loop:
+	for {
+		select {
+		case <-s.quit:
+			break loop
+		default:
+			s.accept(listener, eventHandler, systemLogHandler)
 		}
-	}()
-
-	<-s.quit
+	}
 }
 
-func config(systemLogHandler func(interface{})) *ssh.ServerConfig {
+func (s *Server) accept(listener net.Listener, eventHandler func(*jaal.Event), systemLogHandler func(interface{})) {
+	tcpConn, err := listener.Accept()
+	if err != nil {
+		systemLogHandler(err)
+		return
+	}
+	tcpConn.SetDeadline(time.Now().Add(s.ioTimeout))
+
+	config := config(s.sshHostKeyFile, systemLogHandler)
+	sshServerConn, chans, reqs, err := ssh.NewServerConn(tcpConn, config)
+	if err != nil {
+		systemLogHandler(err)
+		return
+	}
+
+	defer sshServerConn.Close()
+
+	sha, err := jaal.ToSHA256(sshServerConn.SessionID())
+	if err != nil {
+		systemLogHandler(err)
+		sshServerConn.Close()
+		return
+	}
+
+	remoteIP, _, err := net.SplitHostPort(sshServerConn.RemoteAddr().String())
+	if err != nil {
+		remoteIP = sshServerConn.RemoteAddr().String()
+	}
+
+	metadata := sshEventMetadata{
+		RemoteIP:      remoteIP,
+		ClientVersion: string(sshServerConn.ClientVersion()),
+		CorrelationID: sha[0:7],
+		Password:      sshServerConn.Permissions.Extensions[sha[0:7]], // See PasswordCallback
+		Username:      sshServerConn.User(),
+	}
+
+	go sshRequestsHandler(reqs, eventHandler, systemLogHandler)
+	go eventHandler(loginEvent(metadata))
+	for newChannel := range chans {
+		sshChannelHandler(newChannel, metadata, eventHandler, systemLogHandler)
+	}
+}
+
+func config(sshHostKeyFile string, systemLogHandler func(interface{})) *ssh.ServerConfig {
 	c := &ssh.ServerConfig{
 		// Allow everyone to login. This is a honeypot 😀
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
@@ -139,7 +120,7 @@ func config(systemLogHandler func(interface{})) *ssh.ServerConfig {
 		},
 	}
 
-	hostKey, err := hostKey()
+	hostKey, err := hostKey(sshHostKeyFile)
 	if err != nil {
 		systemLogHandler(jaal.FatalError{Err: err})
 	}
@@ -149,42 +130,54 @@ func config(systemLogHandler func(interface{})) *ssh.ServerConfig {
 	return c
 }
 
-func hostKey() (ssh.Signer, error) {
-	key, err := rsa.GenerateKey(rand.Reader, 4096)
-	if err != nil {
-		return nil, err
+func hostKey(sshHostKeyFile string) (ssh.Signer, error) {
+	generateKey := func() (ssh.Signer, error) {
+		key, err := rsa.GenerateKey(rand.Reader, 4096)
+		if err != nil {
+			return nil, err
+		}
+		signer, err := ssh.NewSignerFromKey(key)
+		if err != nil {
+			return nil, err
+		}
+		return signer, nil
 	}
-	signer, err := ssh.NewSignerFromKey(key)
-	if err != nil {
-		return nil, err
+
+	if sshHostKeyFile != "" {
+		keyBytes, err := ioutil.ReadFile(sshHostKeyFile)
+		if err != nil {
+			return nil, jaal.FatalError{Err: err}
+		}
+
+		key, err := ssh.ParsePrivateKey(keyBytes)
+		if err != nil {
+			return nil, jaal.FatalError{Err: err}
+		}
+		return key, nil
+	} else {
+		return generateKey()
 	}
-	return signer, nil
 }
 
-func loginEvent(params sshEventMetadata) *jaal.Event {
-	host, _, err := net.SplitHostPort(params.RemoteAddr.String())
-	if err != nil {
-		host = params.RemoteAddr.String()
-	}
-
+func loginEvent(metadata sshEventMetadata) *jaal.Event {
 	event := &jaal.Event{
 		Type:          "ssh login",
-		Source:        host,
-		CorrelationID: params.CorrelationID,
+		Source:        metadata.RemoteIP,
+		CorrelationID: metadata.CorrelationID,
 	}
 	now := time.Now()
 	event.SourceHostName = jaal.LookupAddr(event.Source)
 	event.UnixTime = now.Unix()
 	event.Timestamp = now.UTC().Format(time.RFC3339)
 	event.Summary = fmt.Sprintf("ssh login with Username: %v password: %v from %v(%v)",
-		params.Username, params.Password, event.SourceHostName, event.Source)
-	event.Data = params
+		metadata.Username, metadata.Password, event.SourceHostName, event.Source)
+	event.Data = metadata
 	return event
 }
 
 type sshEventMetadata struct {
 	CorrelationID string
-	RemoteAddr    net.Addr
+	RemoteIP      string
 	ClientVersion string
 	Username      string
 	Password      string
