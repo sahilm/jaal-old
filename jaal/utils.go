@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net"
+	"time"
 )
 
 func ToSHA256(b []byte) (string, error) {
@@ -13,6 +14,13 @@ func ToSHA256(b []byte) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func AddEventMetadata(event *Event) {
+	now := time.Now()
+	event.SourceHostName = LookupAddr(event.Source)
+	event.UnixTime = now.Unix()
+	event.Timestamp = now.UTC().Format(time.RFC3339)
 }
 
 func LookupAddr(address string) string {

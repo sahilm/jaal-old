@@ -63,7 +63,7 @@ func requestEvent(metadata sshEventMetadata, reqType string, data interface{}) *
 		Source:        metadata.RemoteIP,
 		CorrelationID: metadata.CorrelationID,
 	}
-	enrichEvent(event)
+	jaal.AddEventMetadata(event)
 	event.Summary = fmt.Sprintf("ssh request: %v from %v(%v)", reqType, event.SourceHostName, event.Source)
 	event.Data = data
 	return event

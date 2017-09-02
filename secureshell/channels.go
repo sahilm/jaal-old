@@ -2,7 +2,6 @@ package secureshell
 
 import (
 	"fmt"
-	"time"
 
 	"io"
 
@@ -82,7 +81,7 @@ func channelEvent(metadata sshEventMetadata, channelType string, data interface{
 		Source:        metadata.RemoteIP,
 		CorrelationID: metadata.CorrelationID,
 	}
-	enrichEvent(event)
+	jaal.AddEventMetadata(event)
 	event.Summary = fmt.Sprintf("ssh channel open: %v from %v(%v)",
 		channelType, event.SourceHostName, event.Source)
 	event.Data = data
@@ -95,7 +94,7 @@ func termLineEvent(metadata sshEventMetadata, line string) *jaal.Event {
 		Source:        metadata.RemoteIP,
 		CorrelationID: metadata.CorrelationID,
 	}
-	enrichEvent(event)
+	jaal.AddEventMetadata(event)
 	event.Summary = fmt.Sprintf("ssh command: %v from %v(%v)",
 		line, event.SourceHostName, event.Source)
 	event.Data = line
@@ -108,15 +107,8 @@ func genericEvent(metadata sshEventMetadata, bytes []byte, n int) *jaal.Event {
 		Source:        metadata.RemoteIP,
 		CorrelationID: metadata.CorrelationID,
 	}
-	enrichEvent(event)
+	jaal.AddEventMetadata(event)
 	event.Summary = fmt.Sprintf("ssh data recv from %v(%v)", event.SourceHostName, event.Source)
 	event.Data = string(bytes[:n])
 	return event
-}
-
-func enrichEvent(event *jaal.Event) {
-	now := time.Now()
-	event.SourceHostName = jaal.LookupAddr(event.Source)
-	event.UnixTime = now.Unix()
-	event.Timestamp = now.UTC().Format(time.RFC3339)
 }
