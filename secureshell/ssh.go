@@ -65,7 +65,11 @@ func (s *Server) accept(listener net.Listener, eventHandler func(*jaal.Event), s
 		systemLogHandler(err)
 		return
 	}
-	tcpConn.SetDeadline(time.Now().Add(s.ioTimeout))
+
+	err = tcpConn.SetDeadline(time.Now().Add(s.ioTimeout))
+	if err != nil {
+		systemLogHandler(err)
+	}
 
 	config := config(s.sshHostKeyFile, systemLogHandler)
 	sshServerConn, chans, reqs, err := ssh.NewServerConn(tcpConn, config)
