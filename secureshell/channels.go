@@ -53,7 +53,11 @@ func sshChannelHandler(newChannel ssh.NewChannel, metadata sshEventMetadata,
 	defer channel.Close()
 	go sshRequestsHandler(reqs, metadata, eventLogHandler, syslogHandler)
 
-	if newChannel.ChannelType() == "session" {
+	handleChannel(channel, newChannel.ChannelType(), syslogHandler, eventLogHandler, metadata)
+}
+func handleChannel(channel ssh.Channel, channelType string, syslogHandler func(interface{}),
+	eventLogHandler func(event *jaal.Event), metadata sshEventMetadata) {
+	if channelType == "session" {
 		term := terminal.NewTerminal(channel, "$ ")
 		for {
 			line, err := term.ReadLine()
