@@ -23,7 +23,6 @@ func sshRequestsHandler(channel ssh.Channel, reqs <-chan *ssh.Request, metadata 
 	eventLogHandler func(event *jaal.Event), sysLogHandler func(interface{})) {
 
 	for r := range reqs {
-		fmt.Println(r.Type)
 		switch r.Type {
 		case "exec":
 			data := exec{}
