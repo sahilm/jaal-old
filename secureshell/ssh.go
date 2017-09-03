@@ -99,7 +99,7 @@ func (s *Server) accept(listener net.Listener, eventHandler func(*jaal.Event), s
 	}
 	eventHandler(loginEvent(metadata))
 
-	go sshRequestsHandler(reqs, metadata, eventHandler, systemLogHandler)
+	go sshRequestsHandler(nil, reqs, metadata, eventHandler, systemLogHandler)
 
 	go func() {
 		for newChannel := range chans {
