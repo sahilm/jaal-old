@@ -5,6 +5,8 @@ import (
 
 	"io"
 
+	"strings"
+
 	"github.com/sahilm/jaal/jaal"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -19,6 +21,8 @@ type tcpipForward struct {
 	BindPort    uint32
 }
 
+var uname string = "Linux host 4.4.0-1022 #31-Ubuntu SMP Tue Jun 27 11:27:55 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux\n"
+
 func sshRequestsHandler(channel ssh.Channel, reqs <-chan *ssh.Request, metadata sshEventMetadata,
 	eventLogHandler func(event *jaal.Event), sysLogHandler func(interface{})) {
 
@@ -29,6 +33,9 @@ func sshRequestsHandler(channel ssh.Channel, reqs <-chan *ssh.Request, metadata 
 			err := ssh.Unmarshal(r.Payload, &data)
 			if err != nil {
 				sysLogHandler(err)
+			}
+			if strings.HasPrefix(data.Command, "uname") {
+				channel.Write([]byte(uname))
 			}
 			eventLogHandler(requestEvent(metadata, r.Type, data))
 			channel.Close()
