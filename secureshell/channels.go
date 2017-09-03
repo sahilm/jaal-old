@@ -25,8 +25,6 @@ type x11 struct {
 func sshChannelHandler(newChannel ssh.NewChannel, metadata sshEventMetadata,
 	eventLogHandler func(event *jaal.Event), syslogHandler func(interface{})) {
 
-	var out struct{}
-
 	switch newChannel.ChannelType() {
 	case "direct-tcpip":
 		out := tcpip{}
@@ -34,15 +32,15 @@ func sshChannelHandler(newChannel ssh.NewChannel, metadata sshEventMetadata,
 		if err != nil {
 			syslogHandler(err)
 		}
+		eventLogHandler(channelEvent(metadata, newChannel.ChannelType(), out))
 	case "x11":
 		out := x11{}
 		err := ssh.Unmarshal(newChannel.ExtraData(), &out)
 		if err != nil {
 			syslogHandler(err)
 		}
+		eventLogHandler(channelEvent(metadata, newChannel.ChannelType(), out))
 	}
-
-	eventLogHandler(channelEvent(metadata, newChannel.ChannelType(), out))
 
 	channel, reqs, err := newChannel.Accept()
 	if err != nil {

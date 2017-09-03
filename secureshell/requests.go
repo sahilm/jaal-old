@@ -27,13 +27,25 @@ func sshRequestsHandler(reqs <-chan *ssh.Request, metadata sshEventMetadata,
 		switch r.Type {
 		case "env":
 			data := env{}
-			logRequestEvent(r, data, sysLogHandler, eventLogHandler, metadata)
+			err := ssh.Unmarshal(r.Payload, &data)
+			if err != nil {
+				sysLogHandler(err)
+			}
+			eventLogHandler(requestEvent(metadata, r.Type, data))
 		case "exec":
 			data := exec{}
-			logRequestEvent(r, data, sysLogHandler, eventLogHandler, metadata)
+			err := ssh.Unmarshal(r.Payload, &data)
+			if err != nil {
+				sysLogHandler(err)
+			}
+			eventLogHandler(requestEvent(metadata, r.Type, data))
 		case "tcpip-forward":
 			data := tcpipForward{}
-			logRequestEvent(r, data, sysLogHandler, eventLogHandler, metadata)
+			err := ssh.Unmarshal(r.Payload, &data)
+			if err != nil {
+				sysLogHandler(err)
+			}
+			eventLogHandler(requestEvent(metadata, r.Type, data))
 		}
 
 		if r.WantReply {
@@ -43,15 +55,6 @@ func sshRequestsHandler(reqs <-chan *ssh.Request, metadata sshEventMetadata,
 			}
 		}
 	}
-}
-
-func logRequestEvent(r *ssh.Request, data interface{}, sysLogHandler func(interface{}),
-	eventLogHandler func(event *jaal.Event), metadata sshEventMetadata) {
-	err := ssh.Unmarshal(r.Payload, &data)
-	if err != nil {
-		sysLogHandler(err)
-	}
-	eventLogHandler(requestEvent(metadata, r.Type, data))
 }
 
 func requestEvent(metadata sshEventMetadata, reqType string, data interface{}) *jaal.Event {
