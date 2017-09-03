@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/huguesalary/slack-go"
+  packages = ["."]
+  revision = "e63b5d22dbf483c297b2cd5cf3a4415436703ca3"
+
+[[projects]]
   name = "github.com/jessevdk/go-flags"
   packages = ["."]
   revision = "96dc06278ce32a0e9d957d590bb987c81ee66407"
@@ -28,6 +34,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5ad1df7242c2b737f2ed3f381f2dd3e2ec19d7d8e5653741a1024b1c6f43d467"
+  inputs-digest = "e5686266dcfd0cd740d13881b4cfd270b7d18577785a28169c06d4afb345c5ea"
   solver-name = "gps-cdcl"
   solver-version = 1

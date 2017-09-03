@@ -22,6 +22,7 @@ func NewEventLogger(out io.Writer, systemLogger *SystemLogger, indent string) *E
 	l := logrus.New()
 	l.Out = out
 	l.Formatter = &eventLogFormatter{indent}
+	l.Hooks.Add(&SlackNotifier{})
 	return &EventLog{l, systemLogger}
 }
 
